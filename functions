@@ -727,6 +727,48 @@ run_build_hook() {
     return 0
 }
 
+run_finalize_hook() {
+    local hook=$1 script= realscript=
+
+    # find script in install dirs
+    if ! script=$(PATH=$_d_install type -P "$hook"); then
+        error "Hook '$hook' cannot be found"
+        return 1
+    fi
+
+    # check for deprecation
+    if [[ -L $script ]]; then
+        realscript=$(readlink -e "$script")
+        warning "Hook '%s' is deprecated. Replace it with '%s' in your config" \
+            "${script##*/}" "${realscript##*/}"
+        script=$realscript
+    fi
+
+    # source
+    unset -f finalize
+    if ! . "$script"; then
+        error 'Failed to read %s' "$script"
+        return 1
+    fi
+
+    # skip if no finalize function was found
+    if ! declare -f finalize >/dev/null; then
+        return 0
+    fi
+
+    # run
+    if (( _optquiet )); then
+        msg2 "Running finalize hook: [%s]" "${script##*/}"
+    else
+        msg2 "Running finalize hook: [%s]" "$script"
+    fi
+    finalize
+
+    # if we made it this far, return successfully. Hooks can
+    # do their own error catching if it's severe enough
+    return 0
+}
+
 try_enable_color() {
     local colors
 

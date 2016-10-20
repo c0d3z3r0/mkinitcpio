@@ -526,6 +526,8 @@ else
     msg "Dry run complete, use -g IMAGE to generate a real image"
 fi
 
+map run_finalize_hook "${_hooks[@]}"
+
 cleanup $(( !!_builderrors ))
 
 # vim: set ft=sh ts=4 sw=4 et:
